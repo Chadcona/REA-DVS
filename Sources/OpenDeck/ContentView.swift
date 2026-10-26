@@ -1,4 +1,5 @@
 import Combine
+import CoreMIDI
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -268,9 +269,19 @@ private struct MIDIStatusView: View {
                 Text("No MIDI input devices detected")
                     .foregroundStyle(.secondary)
             } else {
-                Text(midi.sources.map(\.name).joined(separator: " · "))
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
+                Picker("Input", selection: Binding(
+                    get: { midi.selectedSourceID },
+                    set: { midi.connect(to: $0) }
+                )) {
+                    Text("No input").tag(MIDIUniqueID?.none)
+                    ForEach(midi.sources) { source in
+                        Text(source.name).tag(Optional(source.id))
+                    }
+                }
+                .labelsHidden()
+                if let message = midi.lastMessage {
+                    Text(message.description).monospacedDigit().foregroundStyle(.orange)
+                }
             }
             Spacer()
             Button("Refresh devices") { midi.refresh() }

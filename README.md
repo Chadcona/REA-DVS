@@ -14,6 +14,7 @@ link to, or modify Serato DJ Pro code, assets, settings, or file formats.
 - Local onset/autocorrelation BPM estimate, displayed as an estimate and used to seed deck sync
 - Persistent named OpenDeck crates with library filtering and add-to-crate controls
 - Per-deck audio effects: DJ filter, echo, and reverb wired into AVAudioEngine
+- CoreMIDI input selection and live incoming-message monitor, ready for MIDI learn
 - AVAudioEngine-backed play/pause, cue, pitch, and gain controls
 - Loop, filter, sync, crossfader, waveform, and library state ready for their audio/data implementations
 
@@ -28,4 +29,4 @@ swift run
 1. Expand Serato import to additional tag containers and crate membership.
 2. Add beat-grid-aware waveform navigation and manual BPM correction.
 3. Persist controller mappings in OpenDeck-owned storage.
-4. Add MIDI controller learning and effect parameter mapping.
+4. Add MIDI learn, controller-map persistence, and effect parameter mapping.
