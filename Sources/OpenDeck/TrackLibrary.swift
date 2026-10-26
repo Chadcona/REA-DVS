@@ -8,15 +8,17 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
     let title: String
     let duration: TimeInterval
     let cuePoints: [CuePoint]
+    let savedLoops: [SavedLoop]
 
-    private enum CodingKeys: String, CodingKey { case id, path, title, duration, cuePoints }
+    private enum CodingKeys: String, CodingKey { case id, path, title, duration, cuePoints, savedLoops }
 
-    init(id: UUID, path: String, title: String, duration: TimeInterval, cuePoints: [CuePoint] = []) {
+    init(id: UUID, path: String, title: String, duration: TimeInterval, cuePoints: [CuePoint] = [], savedLoops: [SavedLoop] = []) {
         self.id = id
         self.path = path
         self.title = title
         self.duration = duration
         self.cuePoints = cuePoints
+        self.savedLoops = savedLoops
     }
 
     init(from decoder: Decoder) throws {
@@ -26,6 +28,7 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
         title = try container.decode(String.self, forKey: .title)
         duration = try container.decode(TimeInterval.self, forKey: .duration)
         cuePoints = try container.decodeIfPresent([CuePoint].self, forKey: .cuePoints) ?? []
+        savedLoops = try container.decodeIfPresent([SavedLoop].self, forKey: .savedLoops) ?? []
     }
 
     var url: URL { URL(fileURLWithPath: path) }
@@ -49,12 +52,14 @@ final class TrackLibrary {
             do {
                 let file = try AVAudioFile(forReading: url)
                 let duration = Double(file.length) / file.processingFormat.sampleRate
+                let markers = SeratoMarkers.readMetadata(from: url)
                 tracks.append(LibraryTrack(
                     id: UUID(),
                     path: url.path,
                     title: url.deletingPathExtension().lastPathComponent,
                     duration: duration,
-                    cuePoints: SeratoMarkers.readCuePoints(from: url)
+                    cuePoints: markers.cuePoints,
+                    savedLoops: markers.savedLoops
                 ))
             } catch {
                 importError = "Could not import \(url.lastPathComponent): \(error.localizedDescription)"

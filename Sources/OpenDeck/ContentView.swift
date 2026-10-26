@@ -187,6 +187,9 @@ private struct LibraryView: View {
                                 if !track.cuePoints.isEmpty {
                                     Text("\(track.cuePoints.count) cues").foregroundStyle(.orange)
                                 }
+                                if !track.savedLoops.isEmpty {
+                                    Text("\(track.savedLoops.count) loops").foregroundStyle(.mint)
+                                }
                                 Spacer()
                                 Text(track.durationLabel).monospacedDigit().foregroundStyle(.secondary)
                                 Button("A") { try? session.leftDeck.load(url: track.url) }

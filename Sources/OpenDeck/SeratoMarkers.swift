@@ -10,27 +10,51 @@ struct CuePoint: Codable, Hashable, Identifiable {
     var position: TimeInterval { TimeInterval(positionMilliseconds) / 1_000 }
 }
 
+struct SavedLoop: Codable, Hashable, Identifiable {
+    let index: Int
+    let startMilliseconds: UInt32
+    let endMilliseconds: UInt32
+    let name: String
+    let colorHex: String
+    let isLocked: Bool
+
+    var id: Int { index }
+    var duration: TimeInterval { TimeInterval(endMilliseconds - startMilliseconds) / 1_000 }
+}
+
+struct SeratoMarkerMetadata: Hashable {
+    let cuePoints: [CuePoint]
+    let savedLoops: [SavedLoop]
+
+    static let empty = SeratoMarkerMetadata(cuePoints: [], savedLoops: [])
+}
+
 enum SeratoMarkers {
     static func readCuePoints(from url: URL) -> [CuePoint] {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return [] }
+        readMetadata(from: url).cuePoints
+    }
+
+    static func readMetadata(from url: URL) -> SeratoMarkerMetadata {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return .empty }
         defer { try? handle.close() }
         guard let filePrefix = try? handle.read(upToCount: 2 * 1_024 * 1_024),
               let label = filePrefix.range(of: Data("Serato Markers2\0".utf8))
-        else { return [] }
+        else { return .empty }
         let payload = filePrefix.suffix(from: label.upperBound)
         return parse(payload: Data(payload))
     }
 
-    static func parse(payload: Data) -> [CuePoint] {
-        guard payload.count >= 4, payload[0] == 1, payload[1] == 1 else { return [] }
+    static func parse(payload: Data) -> SeratoMarkerMetadata {
+        guard payload.count >= 4, payload[0] == 1, payload[1] == 1 else { return .empty }
         let encoded = payload.dropFirst(2).prefix { $0 != 0 }
             .filter { $0 != 10 && $0 != 13 && $0 != 32 }
         var base64 = Data(encoded)
         while base64.count % 4 != 0 { base64.append(65) } // Serato occasionally omits padding.
-        guard let decoded = Data(base64Encoded: base64, options: .ignoreUnknownCharacters), decoded.count >= 2 else { return [] }
+        guard let decoded = Data(base64Encoded: base64, options: .ignoreUnknownCharacters), decoded.count >= 2 else { return .empty }
 
         var offset = 2
         var cues: [CuePoint] = []
+        var loops: [SavedLoop] = []
         while offset < decoded.count,
               let terminator = decoded[offset...].firstIndex(of: 0), terminator > offset,
               terminator + 4 < decoded.count {
@@ -41,9 +65,13 @@ enum SeratoMarkers {
             let bodyEnd = bodyStart + Int(length)
             guard bodyEnd <= decoded.count else { break }
             if type == "CUE", let cue = decodeCue(Data(decoded[bodyStart..<bodyEnd])) { cues.append(cue) }
+            if type == "LOOP", let loop = decodeLoop(Data(decoded[bodyStart..<bodyEnd])) { loops.append(loop) }
             offset = bodyEnd
         }
-        return cues.sorted { $0.index < $1.index }
+        return SeratoMarkerMetadata(
+            cuePoints: cues.sorted { $0.index < $1.index },
+            savedLoops: loops.sorted { $0.index < $1.index }
+        )
     }
 
     private static func decodeCue(_ body: Data) -> CuePoint? {
@@ -55,6 +83,20 @@ enum SeratoMarkers {
             positionMilliseconds: be32(body, at: 2),
             name: name,
             colorHex: String(format: "#%02X%02X%02X", body[7], body[8], body[9])
+        )
+    }
+
+    private static func decodeLoop(_ body: Data) -> SavedLoop? {
+        guard body.count >= 20 else { return nil }
+        let nameEnd = body[20...].firstIndex(of: 0) ?? body.endIndex
+        let name = String(data: body[20..<nameEnd], encoding: .utf8) ?? ""
+        return SavedLoop(
+            index: Int(body[1]),
+            startMilliseconds: be32(body, at: 2),
+            endMilliseconds: be32(body, at: 6),
+            name: name,
+            colorHex: String(format: "#%02X%02X%02X", body[15], body[16], body[17]),
+            isLocked: body[19] != 0
         )
     }
 
