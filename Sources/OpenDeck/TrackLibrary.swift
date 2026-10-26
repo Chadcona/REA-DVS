@@ -9,16 +9,18 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
     let duration: TimeInterval
     let cuePoints: [CuePoint]
     let savedLoops: [SavedLoop]
+    let waveform: [Float]
 
-    private enum CodingKeys: String, CodingKey { case id, path, title, duration, cuePoints, savedLoops }
+    private enum CodingKeys: String, CodingKey { case id, path, title, duration, cuePoints, savedLoops, waveform }
 
-    init(id: UUID, path: String, title: String, duration: TimeInterval, cuePoints: [CuePoint] = [], savedLoops: [SavedLoop] = []) {
+    init(id: UUID, path: String, title: String, duration: TimeInterval, cuePoints: [CuePoint] = [], savedLoops: [SavedLoop] = [], waveform: [Float] = []) {
         self.id = id
         self.path = path
         self.title = title
         self.duration = duration
         self.cuePoints = cuePoints
         self.savedLoops = savedLoops
+        self.waveform = waveform
     }
 
     init(from decoder: Decoder) throws {
@@ -29,6 +31,7 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
         duration = try container.decode(TimeInterval.self, forKey: .duration)
         cuePoints = try container.decodeIfPresent([CuePoint].self, forKey: .cuePoints) ?? []
         savedLoops = try container.decodeIfPresent([SavedLoop].self, forKey: .savedLoops) ?? []
+        waveform = try container.decodeIfPresent([Float].self, forKey: .waveform) ?? []
     }
 
     var url: URL { URL(fileURLWithPath: path) }
@@ -53,13 +56,15 @@ final class TrackLibrary {
                 let file = try AVAudioFile(forReading: url)
                 let duration = Double(file.length) / file.processingFormat.sampleRate
                 let markers = SeratoMarkers.readMetadata(from: url)
+                let waveform = try WaveformAnalyzer.analyze(url: url)
                 tracks.append(LibraryTrack(
                     id: UUID(),
                     path: url.path,
                     title: url.deletingPathExtension().lastPathComponent,
                     duration: duration,
                     cuePoints: markers.cuePoints,
-                    savedLoops: markers.savedLoops
+                    savedLoops: markers.savedLoops,
+                    waveform: waveform
                 ))
             } catch {
                 importError = "Could not import \(url.lastPathComponent): \(error.localizedDescription)"

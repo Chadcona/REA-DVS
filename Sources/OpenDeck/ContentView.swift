@@ -53,7 +53,7 @@ private struct DeckView: View {
             }
             .padding(.horizontal, 4)
 
-            WaveformPlaceholder(progress: deck.progress, accent: accent)
+            WaveformView(samples: deck.waveform, progress: deck.progress, accent: accent)
             VStack(alignment: .leading, spacing: 3) {
                 Text(deck.trackName).font(.title3.weight(.semibold))
                 Text(deck.artist.isEmpty ? "Drag a local audio file here (next milestone)" : deck.artist)
@@ -130,7 +130,8 @@ private struct ControlSlider: View {
     }
 }
 
-private struct WaveformPlaceholder: View {
+private struct WaveformView: View {
+    let samples: [Float]
     let progress: Double
     let accent: Color
 
@@ -138,10 +139,11 @@ private struct WaveformPlaceholder: View {
         GeometryReader { proxy in
             Canvas { context, size in
                 let center = size.height / 2
+                let visibleSamples = samples.isEmpty ? Array(repeating: Float(0.18), count: 80) : samples
                 var path = Path()
-                for x in stride(from: 0.0, through: size.width, by: 2) {
-                    let phase = x / 13
-                    let height = (sin(phase) * 0.23 + sin(phase * 0.37) * 0.38 + 0.4) * center
+                for index in visibleSamples.indices {
+                    let x = size.width * CGFloat(index) / CGFloat(max(1, visibleSamples.count - 1))
+                    let height = CGFloat(visibleSamples[index]) * center
                     path.move(to: CGPoint(x: x, y: center - height))
                     path.addLine(to: CGPoint(x: x, y: center + height))
                 }
@@ -192,9 +194,9 @@ private struct LibraryView: View {
                                 }
                                 Spacer()
                                 Text(track.durationLabel).monospacedDigit().foregroundStyle(.secondary)
-                                Button("A") { try? session.leftDeck.load(url: track.url) }
+                                Button("A") { try? session.leftDeck.load(track: track) }
                                     .buttonStyle(.bordered)
-                                Button("B") { try? session.rightDeck.load(url: track.url) }
+                                Button("B") { try? session.rightDeck.load(track: track) }
                                     .buttonStyle(.bordered)
                                 Button(role: .destructive) { session.library.remove(track) } label: {
                                     Image(systemName: "trash")

@@ -94,6 +94,7 @@ final class Deck {
     var isPlaying = false
     var isCueing = false
     var loopLength: Int? = nil
+    var waveform: [Float] = []
     private let audio = DeckAudioEngine()
     private var mixerGain: Double = 1
 
@@ -107,10 +108,16 @@ final class Deck {
 
     func load(url: URL) throws {
         duration = try audio.load(url: url)
+        waveform = try WaveformAnalyzer.analyze(url: url)
         trackName = url.deletingPathExtension().lastPathComponent
         artist = "Local audio file"
         elapsed = 0
         isPlaying = false
+    }
+
+    func load(track: LibraryTrack) throws {
+        try load(url: track.url)
+        waveform = track.waveform
     }
 
     func playPause() {
