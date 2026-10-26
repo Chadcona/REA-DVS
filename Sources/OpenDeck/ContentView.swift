@@ -17,6 +17,7 @@ struct ContentView: View {
             LibraryView(session: session)
             SeratoImportView(session: session)
             MIDIStatusView(midi: session.midi)
+            MIDILearnView(mappings: session.midiMappings)
         }
         .padding(18)
         .background(Color(red: 0.055, green: 0.06, blue: 0.075))
@@ -34,6 +35,30 @@ struct ContentView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(session.syncEnabled ? .green : .indigo)
         }
+    }
+}
+
+private struct MIDILearnView: View {
+    @Bindable var mappings: MIDIMapStore
+    @State private var action: MIDIAction = .deckAPlayPause
+
+    var body: some View {
+        HStack {
+            Text("MIDI learn").font(.caption.weight(.semibold))
+            Picker("Action", selection: $action) {
+                ForEach(MIDIAction.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .labelsHidden()
+            Button(mappings.pendingAction == nil ? "Learn next input" : "Listening…") {
+                mappings.pendingAction = mappings.pendingAction == nil ? action : nil
+            }
+            .buttonStyle(.bordered)
+            Spacer()
+            Text("\(mappings.mappings.count) mappings")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .font(.caption)
+        .padding(.horizontal, 12)
     }
 }
 

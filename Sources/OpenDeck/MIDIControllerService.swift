@@ -22,6 +22,7 @@ final class MIDIControllerService {
     private(set) var sources: [MIDISource] = []
     private(set) var selectedSourceID: MIDIUniqueID?
     private(set) var lastMessage: MIDIMessage?
+    var onMessage: ((MIDIMessage) -> Void)?
     private var client = MIDIClientRef()
     private var inputPort = MIDIPortRef()
 
@@ -33,7 +34,10 @@ final class MIDIControllerService {
             let bytes = withUnsafeBytes(of: packet.data) { Array($0.prefix(Int(packet.length))) }
             guard bytes.count >= 3 else { return }
             let message = MIDIMessage(status: bytes[0], data1: bytes[1], data2: bytes[2])
-            DispatchQueue.main.async { self?.lastMessage = message }
+            DispatchQueue.main.async {
+                self?.lastMessage = message
+                self?.onMessage?(message)
+            }
         }
         refresh()
     }

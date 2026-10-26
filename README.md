@@ -15,6 +15,7 @@ link to, or modify Serato DJ Pro code, assets, settings, or file formats.
 - Persistent named OpenDeck crates with library filtering and add-to-crate controls
 - Per-deck audio effects: DJ filter, echo, and reverb wired into AVAudioEngine
 - CoreMIDI input selection and live incoming-message monitor, ready for MIDI learn
+- Persistent MIDI learn and dispatch for play/pause, crossfader, filter, and echo controls
 - Imported Serato cue points rendered as functional deck pads for seek/playback navigation
 - Imported saved loops rendered as deck pads with start/end repeat and release behavior
 - BPM-derived 1/2/4/8 beat manual loops with real playback repeat
@@ -32,4 +33,4 @@ swift run
 1. Expand Serato import to additional tag containers and crate membership.
 2. Add beat-grid-aware waveform navigation and manual BPM correction.
 3. Persist controller mappings in OpenDeck-owned storage.
-4. Add MIDI learn, controller-map persistence, and cue/effect parameter mapping.
+4. Extend MIDI mapping to cues, loops, remaining effects, and RANE-specific feedback.

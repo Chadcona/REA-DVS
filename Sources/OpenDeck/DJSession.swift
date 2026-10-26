@@ -291,8 +291,12 @@ final class DJSession {
     let library = TrackLibrary()
     let crates = CrateStore()
     let seratoScanner = SeratoImportScanner()
+    let midiMappings = MIDIMapStore()
 
-    init() { applyMixerLevels() }
+    init() {
+        applyMixerLevels()
+        midi.onMessage = { [weak self] message in self?.handleMIDI(message) }
+    }
 
     func sync() {
         rightDeck.bpm = leftDeck.bpm
@@ -304,5 +308,23 @@ final class DJSession {
         let rightLevel = masterGain * (crossfader < 0 ? 1 + crossfader : 1)
         leftDeck.setMixerGain(leftLevel)
         rightDeck.setMixerGain(rightLevel)
+    }
+
+    private func handleMIDI(_ message: MIDIMessage) {
+        if midiMappings.pendingAction != nil {
+            midiMappings.learn(message)
+            return
+        }
+        guard let action = midiMappings.action(for: message) else { return }
+        let normalized = Double(message.data2) / 127
+        switch action {
+        case .deckAPlayPause: if message.data2 > 0 { leftDeck.playPause() }
+        case .deckBPlayPause: if message.data2 > 0 { rightDeck.playPause() }
+        case .crossfader: crossfader = normalized * 2 - 1
+        case .deckAFilter: leftDeck.filter = normalized * 2 - 1
+        case .deckBFilter: rightDeck.filter = normalized * 2 - 1
+        case .deckAEcho: leftDeck.echo = normalized
+        case .deckBEcho: rightDeck.echo = normalized
+        }
     }
 }
