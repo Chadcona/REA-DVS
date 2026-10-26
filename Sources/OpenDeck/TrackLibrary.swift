@@ -10,10 +10,11 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
     let cuePoints: [CuePoint]
     let savedLoops: [SavedLoop]
     let waveform: [Float]
+    let estimatedBPM: Double?
 
-    private enum CodingKeys: String, CodingKey { case id, path, title, duration, cuePoints, savedLoops, waveform }
+    private enum CodingKeys: String, CodingKey { case id, path, title, duration, cuePoints, savedLoops, waveform, estimatedBPM }
 
-    init(id: UUID, path: String, title: String, duration: TimeInterval, cuePoints: [CuePoint] = [], savedLoops: [SavedLoop] = [], waveform: [Float] = []) {
+    init(id: UUID, path: String, title: String, duration: TimeInterval, cuePoints: [CuePoint] = [], savedLoops: [SavedLoop] = [], waveform: [Float] = [], estimatedBPM: Double? = nil) {
         self.id = id
         self.path = path
         self.title = title
@@ -21,6 +22,7 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
         self.cuePoints = cuePoints
         self.savedLoops = savedLoops
         self.waveform = waveform
+        self.estimatedBPM = estimatedBPM
     }
 
     init(from decoder: Decoder) throws {
@@ -32,6 +34,7 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
         cuePoints = try container.decodeIfPresent([CuePoint].self, forKey: .cuePoints) ?? []
         savedLoops = try container.decodeIfPresent([SavedLoop].self, forKey: .savedLoops) ?? []
         waveform = try container.decodeIfPresent([Float].self, forKey: .waveform) ?? []
+        estimatedBPM = try container.decodeIfPresent(Double.self, forKey: .estimatedBPM)
     }
 
     var url: URL { URL(fileURLWithPath: path) }
@@ -57,6 +60,7 @@ final class TrackLibrary {
                 let duration = Double(file.length) / file.processingFormat.sampleRate
                 let markers = SeratoMarkers.readMetadata(from: url)
                 let waveform = try WaveformAnalyzer.analyze(url: url)
+                let estimatedBPM = try TempoAnalyzer.estimateBPM(url: url)
                 tracks.append(LibraryTrack(
                     id: UUID(),
                     path: url.path,
@@ -64,7 +68,8 @@ final class TrackLibrary {
                     duration: duration,
                     cuePoints: markers.cuePoints,
                     savedLoops: markers.savedLoops,
-                    waveform: waveform
+                    waveform: waveform,
+                    estimatedBPM: estimatedBPM
                 ))
             } catch {
                 importError = "Could not import \(url.lastPathComponent): \(error.localizedDescription)"

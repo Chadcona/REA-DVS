@@ -58,6 +58,7 @@ private struct DeckView: View {
                 Text(deck.trackName).font(.title3.weight(.semibold))
                 Text(deck.artist.isEmpty ? "Drag a local audio file here (next milestone)" : deck.artist)
                     .font(.caption).foregroundStyle(.secondary)
+                Text(String(format: "%.1f BPM", deck.bpm)).font(.caption.monospacedDigit()).foregroundStyle(accent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -194,6 +195,9 @@ private struct LibraryView: View {
                                 }
                                 Spacer()
                                 Text(track.durationLabel).monospacedDigit().foregroundStyle(.secondary)
+                                if let bpm = track.estimatedBPM {
+                                    Text(String(format: "%.1f BPM", bpm)).monospacedDigit().foregroundStyle(.secondary)
+                                }
                                 Button("A") { try? session.leftDeck.load(track: track) }
                                     .buttonStyle(.bordered)
                                 Button("B") { try? session.rightDeck.load(track: track) }

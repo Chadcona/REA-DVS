@@ -109,6 +109,7 @@ final class Deck {
     func load(url: URL) throws {
         duration = try audio.load(url: url)
         waveform = try WaveformAnalyzer.analyze(url: url)
+        if let estimatedBPM = try TempoAnalyzer.estimateBPM(url: url) { bpm = estimatedBPM }
         trackName = url.deletingPathExtension().lastPathComponent
         artist = "Local audio file"
         elapsed = 0
@@ -118,6 +119,7 @@ final class Deck {
     func load(track: LibraryTrack) throws {
         try load(url: track.url)
         waveform = track.waveform
+        if let estimatedBPM = track.estimatedBPM { bpm = estimatedBPM }
     }
 
     func playPause() {
