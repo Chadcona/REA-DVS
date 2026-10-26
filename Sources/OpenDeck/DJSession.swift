@@ -170,6 +170,7 @@ final class DJSession {
     var syncEnabled = false
     let midi = MIDIControllerService()
     let library = TrackLibrary()
+    let crates = CrateStore()
     let seratoScanner = SeratoImportScanner()
 
     init() { applyMixerLevels() }

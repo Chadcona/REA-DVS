@@ -161,6 +161,8 @@ private struct WaveformView: View {
 private struct LibraryView: View {
     @Bindable var session: DJSession
     @State private var isImporting = false
+    @State private var newCrateName = ""
+    @State private var selectedCrateID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -173,10 +175,29 @@ private struct LibraryView: View {
                 Button("Import audio") { isImporting = true }
                     .buttonStyle(.bordered)
             }
+            HStack {
+                Picker("Crate", selection: $selectedCrateID) {
+                    Text("All tracks").tag(UUID?.none)
+                    ForEach(session.crates.crates) { crate in
+                        Text("\(crate.name) (\(crate.trackIDs.count))").tag(Optional(crate.id))
+                    }
+                }
+                .labelsHidden()
+                TextField("New crate", text: $newCrateName)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 150)
+                Button("Create") {
+                    session.crates.create(name: newCrateName)
+                    newCrateName = ""
+                }
+                .buttonStyle(.bordered)
+                .disabled(newCrateName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
             if let importError = session.library.importError {
                 Text(importError).font(.caption).foregroundStyle(.red)
             }
-            if session.library.tracks.isEmpty {
+            let visibleTracks = session.crates.tracks(in: selectedCrateID, from: session.library.tracks)
+            if visibleTracks.isEmpty {
                 Text("Import locally owned music to build your OpenDeck library.")
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -184,7 +205,7 @@ private struct LibraryView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 4) {
-                        ForEach(session.library.tracks) { track in
+                        ForEach(visibleTracks) { track in
                             HStack {
                                 Text(track.title).lineLimit(1)
                                 if !track.cuePoints.isEmpty {
@@ -202,6 +223,14 @@ private struct LibraryView: View {
                                     .buttonStyle(.bordered)
                                 Button("B") { try? session.rightDeck.load(track: track) }
                                     .buttonStyle(.bordered)
+                                Menu {
+                                    ForEach(session.crates.crates) { crate in
+                                        Button(crate.name) { session.crates.add(track, to: crate.id) }
+                                    }
+                                } label: {
+                                    Image(systemName: "folder.badge.plus")
+                                }
+                                .disabled(session.crates.crates.isEmpty)
                                 Button(role: .destructive) { session.library.remove(track) } label: {
                                     Image(systemName: "trash")
                                 }

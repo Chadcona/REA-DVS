@@ -12,6 +12,7 @@ link to, or modify Serato DJ Pro code, assets, settings, or file formats.
 - Initial `Serato Markers2` cue and saved-loop import for compatible local files (positions, names, colours, and loop lock state)
 - Persisted waveform peak analysis rendered on the deck for imported and directly loaded local audio
 - Local onset/autocorrelation BPM estimate, displayed as an estimate and used to seed deck sync
+- Persistent named OpenDeck crates with library filtering and add-to-crate controls
 - AVAudioEngine-backed play/pause, cue, pitch, and gain controls
 - Loop, filter, sync, crossfader, waveform, and library state ready for their audio/data implementations
 
@@ -25,5 +26,5 @@ swift run
 
 1. Expand Serato import to additional tag containers and crate membership.
 2. Add beat-grid-aware waveform navigation and manual BPM correction.
-3. Add named crates and persist controller mappings in OpenDeck-owned storage.
+3. Persist controller mappings in OpenDeck-owned storage.
 4. Add MIDI controller learning and effects.
