@@ -85,6 +85,18 @@ private struct DeckView: View {
                     }
                 }
             }
+            if !deck.savedLoops.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(deck.savedLoops.prefix(8)) { loop in
+                        Button(loop.name.isEmpty ? "L\(loop.index + 1)" : loop.name) {
+                            deck.toggleSavedLoop(loop)
+                        }
+                        .lineLimit(1)
+                        .buttonStyle(.bordered)
+                        .tint(deck.activeSavedLoop?.id == loop.id ? .mint : (Color(hex: loop.colorHex) ?? accent))
+                    }
+                }
+            }
             HStack {
                 ControlSlider(title: "Pitch", value: $deck.pitch, range: -8...8, tint: accent)
                 ControlSlider(title: "Gain", value: $deck.gain, range: 0...1, tint: accent)

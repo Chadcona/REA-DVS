@@ -146,6 +146,8 @@ final class Deck {
     var loopLength: Int? = nil
     var waveform: [Float] = []
     var cuePoints: [CuePoint] = []
+    var savedLoops: [SavedLoop] = []
+    var activeSavedLoop: SavedLoop?
     private let audio = DeckAudioEngine()
     private var mixerGain: Double = 1
 
@@ -162,6 +164,8 @@ final class Deck {
         waveform = try WaveformAnalyzer.analyze(url: url)
         if let estimatedBPM = try TempoAnalyzer.estimateBPM(url: url) { bpm = estimatedBPM }
         cuePoints = []
+        savedLoops = []
+        activeSavedLoop = nil
         trackName = url.deletingPathExtension().lastPathComponent
         artist = "Local audio file"
         elapsed = 0
@@ -173,12 +177,28 @@ final class Deck {
         waveform = track.waveform
         if let estimatedBPM = track.estimatedBPM { bpm = estimatedBPM }
         cuePoints = track.cuePoints
+        savedLoops = track.savedLoops
     }
 
     func triggerCue(_ cue: CuePoint) {
         do {
             try audio.jump(to: cue.position, shouldPlay: isPlaying)
             elapsed = cue.position
+        } catch {
+            artist = error.localizedDescription
+        }
+    }
+
+    func toggleSavedLoop(_ loop: SavedLoop) {
+        if activeSavedLoop?.id == loop.id {
+            activeSavedLoop = nil
+            return
+        }
+        do {
+            try audio.jump(to: TimeInterval(loop.startMilliseconds) / 1_000, shouldPlay: true)
+            elapsed = TimeInterval(loop.startMilliseconds) / 1_000
+            isPlaying = true
+            activeSavedLoop = loop
         } catch {
             artist = error.localizedDescription
         }
@@ -214,6 +234,16 @@ final class Deck {
     func refreshPlaybackTime() {
         guard isPlaying else { return }
         elapsed = audio.currentTime
+        if let loop = activeSavedLoop,
+           elapsed >= TimeInterval(loop.endMilliseconds) / 1_000 {
+            do {
+                try audio.jump(to: TimeInterval(loop.startMilliseconds) / 1_000, shouldPlay: true)
+                elapsed = TimeInterval(loop.startMilliseconds) / 1_000
+            } catch {
+                activeSavedLoop = nil
+                artist = error.localizedDescription
+            }
+        }
         if elapsed >= duration { isPlaying = false }
     }
 
