@@ -123,6 +123,7 @@ private struct DeckView: View {
                 }
             }
             HStack {
+                ControlSlider(title: "BPM", value: $deck.bpm, range: 60...200, tint: accent)
                 ControlSlider(title: "Pitch", value: $deck.pitch, range: -8...8, tint: accent)
                 ControlSlider(title: "Gain", value: $deck.gain, range: 0...1, tint: accent)
                 ControlSlider(title: "Filter", value: $deck.filter, range: -1...1, tint: accent)
