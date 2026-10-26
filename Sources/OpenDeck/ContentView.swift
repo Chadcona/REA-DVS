@@ -77,6 +77,10 @@ private struct DeckView: View {
                 ControlSlider(title: "Gain", value: $deck.gain, range: 0...1, tint: accent)
                 ControlSlider(title: "Filter", value: $deck.filter, range: -1...1, tint: accent)
             }
+            HStack {
+                ControlSlider(title: "Echo", value: $deck.echo, range: 0...1, tint: accent)
+                ControlSlider(title: "Reverb", value: $deck.reverb, range: 0...1, tint: accent)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity)

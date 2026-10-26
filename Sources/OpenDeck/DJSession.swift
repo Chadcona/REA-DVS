@@ -6,14 +6,32 @@ final class DeckAudioEngine {
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private let timePitch = AVAudioUnitTimePitch()
+    private let filterEQ = AVAudioUnitEQ(numberOfBands: 2)
+    private let delay = AVAudioUnitDelay()
+    private let reverb = AVAudioUnitReverb()
     private var file: AVAudioFile?
     private var scheduledStartFrame: AVAudioFramePosition = 0
 
     init() {
         engine.attach(player)
         engine.attach(timePitch)
+        engine.attach(filterEQ)
+        engine.attach(delay)
+        engine.attach(reverb)
         engine.connect(player, to: timePitch, format: nil)
-        engine.connect(timePitch, to: engine.mainMixerNode, format: nil)
+        engine.connect(timePitch, to: filterEQ, format: nil)
+        engine.connect(filterEQ, to: delay, format: nil)
+        engine.connect(delay, to: reverb, format: nil)
+        engine.connect(reverb, to: engine.mainMixerNode, format: nil)
+        filterEQ.bands[0].filterType = .lowPass
+        filterEQ.bands[0].bypass = true
+        filterEQ.bands[1].filterType = .highPass
+        filterEQ.bands[1].bypass = true
+        delay.delayTime = 0.35
+        delay.feedback = 32
+        delay.wetDryMix = 0
+        reverb.loadFactoryPreset(.mediumHall)
+        reverb.wetDryMix = 0
     }
 
     func load(url: URL) throws -> TimeInterval {
@@ -48,6 +66,25 @@ final class DeckAudioEngine {
     func setPitchPercent(_ percent: Double) {
         timePitch.rate = Float(max(0.5, min(2.0, 1 + percent / 100)))
     }
+
+    func setFilter(_ value: Double) {
+        let amount = min(1, abs(value))
+        if value < 0 {
+            filterEQ.bands[0].bypass = false
+            filterEQ.bands[0].frequency = Float(20_000 * pow(0.006, amount))
+            filterEQ.bands[1].bypass = true
+        } else if value > 0 {
+            filterEQ.bands[0].bypass = true
+            filterEQ.bands[1].bypass = false
+            filterEQ.bands[1].frequency = Float(20 * pow(50, amount))
+        } else {
+            filterEQ.bands[0].bypass = true
+            filterEQ.bands[1].bypass = true
+        }
+    }
+
+    func setEcho(_ amount: Double) { delay.wetDryMix = Float(amount * 100) }
+    func setReverb(_ amount: Double) { reverb.wetDryMix = Float(amount * 100) }
 
     var currentTime: TimeInterval {
         guard let file else { return 0 }
@@ -90,7 +127,9 @@ final class Deck {
     var bpm: Double = 120
     var pitch: Double = 0 { didSet { audio.setPitchPercent(pitch) } }
     var gain: Double = 0.8 { didSet { updateOutputGain() } }
-    var filter: Double = 0
+    var filter: Double = 0 { didSet { audio.setFilter(filter) } }
+    var echo: Double = 0 { didSet { audio.setEcho(echo) } }
+    var reverb: Double = 0 { didSet { audio.setReverb(reverb) } }
     var isPlaying = false
     var isCueing = false
     var loopLength: Int? = nil
