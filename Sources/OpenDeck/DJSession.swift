@@ -325,6 +325,8 @@ final class DJSession {
         case .deckBFilter: rightDeck.filter = normalized * 2 - 1
         case .deckAEcho: leftDeck.echo = normalized
         case .deckBEcho: rightDeck.echo = normalized
+        case .deckAReverb: leftDeck.reverb = normalized
+        case .deckBReverb: rightDeck.reverb = normalized
         case .deckACue1: triggerCue(leftDeck, index: 0, message: message)
         case .deckACue2: triggerCue(leftDeck, index: 1, message: message)
         case .deckACue3: triggerCue(leftDeck, index: 2, message: message)

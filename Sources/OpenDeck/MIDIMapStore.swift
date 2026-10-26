@@ -9,6 +9,8 @@ enum MIDIAction: String, Codable, CaseIterable, Identifiable {
     case deckBFilter = "Deck B Filter"
     case deckAEcho = "Deck A Echo"
     case deckBEcho = "Deck B Echo"
+    case deckAReverb = "Deck A Reverb"
+    case deckBReverb = "Deck B Reverb"
     case deckACue1 = "Deck A Cue 1"
     case deckACue2 = "Deck A Cue 2"
     case deckACue3 = "Deck A Cue 3"
