@@ -7,6 +7,26 @@ struct LibraryTrack: Codable, Identifiable, Hashable {
     let path: String
     let title: String
     let duration: TimeInterval
+    let cuePoints: [CuePoint]
+
+    private enum CodingKeys: String, CodingKey { case id, path, title, duration, cuePoints }
+
+    init(id: UUID, path: String, title: String, duration: TimeInterval, cuePoints: [CuePoint] = []) {
+        self.id = id
+        self.path = path
+        self.title = title
+        self.duration = duration
+        self.cuePoints = cuePoints
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        path = try container.decode(String.self, forKey: .path)
+        title = try container.decode(String.self, forKey: .title)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+        cuePoints = try container.decodeIfPresent([CuePoint].self, forKey: .cuePoints) ?? []
+    }
 
     var url: URL { URL(fileURLWithPath: path) }
     var durationLabel: String {
@@ -33,7 +53,8 @@ final class TrackLibrary {
                     id: UUID(),
                     path: url.path,
                     title: url.deletingPathExtension().lastPathComponent,
-                    duration: duration
+                    duration: duration,
+                    cuePoints: SeratoMarkers.readCuePoints(from: url)
                 ))
             } catch {
                 importError = "Could not import \(url.lastPathComponent): \(error.localizedDescription)"

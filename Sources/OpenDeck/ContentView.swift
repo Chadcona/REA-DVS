@@ -184,6 +184,9 @@ private struct LibraryView: View {
                         ForEach(session.library.tracks) { track in
                             HStack {
                                 Text(track.title).lineLimit(1)
+                                if !track.cuePoints.isEmpty {
+                                    Text("\(track.cuePoints.count) cues").foregroundStyle(.orange)
+                                }
                                 Spacer()
                                 Text(track.durationLabel).monospacedDigit().foregroundStyle(.secondary)
                                 Button("A") { try? session.leftDeck.load(url: track.url) }
