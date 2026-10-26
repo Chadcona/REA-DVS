@@ -128,6 +128,11 @@ final class DeckAudioEngine {
 @Observable
 @MainActor
 final class Deck {
+    struct ManualLoop: Equatable {
+        let beats: Int
+        let start: TimeInterval
+        let end: TimeInterval
+    }
     enum Side: String { case left = "A", right = "B" }
 
     let side: Side
@@ -148,6 +153,7 @@ final class Deck {
     var cuePoints: [CuePoint] = []
     var savedLoops: [SavedLoop] = []
     var activeSavedLoop: SavedLoop?
+    var activeManualLoop: ManualLoop?
     private let audio = DeckAudioEngine()
     private var mixerGain: Double = 1
 
@@ -166,6 +172,7 @@ final class Deck {
         cuePoints = []
         savedLoops = []
         activeSavedLoop = nil
+        activeManualLoop = nil
         trackName = url.deletingPathExtension().lastPathComponent
         artist = "Local audio file"
         elapsed = 0
@@ -199,6 +206,8 @@ final class Deck {
             elapsed = TimeInterval(loop.startMilliseconds) / 1_000
             isPlaying = true
             activeSavedLoop = loop
+            activeManualLoop = nil
+            loopLength = nil
         } catch {
             artist = error.localizedDescription
         }
@@ -226,7 +235,18 @@ final class Deck {
         elapsed = 0
         isCueing = true
     }
-    func toggleLoop(_ beats: Int) { loopLength = loopLength == beats ? nil : beats }
+    func toggleLoop(_ beats: Int) {
+        if activeManualLoop?.beats == beats {
+            activeManualLoop = nil
+            loopLength = nil
+            return
+        }
+        let start = elapsed
+        let loopSeconds = Double(beats) * 60 / bpm
+        activeManualLoop = ManualLoop(beats: beats, start: start, end: min(duration, start + loopSeconds))
+        activeSavedLoop = nil
+        loopLength = beats
+    }
     func setMixerGain(_ value: Double) {
         mixerGain = max(0, min(1, value))
         updateOutputGain()
@@ -234,11 +254,18 @@ final class Deck {
     func refreshPlaybackTime() {
         guard isPlaying else { return }
         elapsed = audio.currentTime
-        if let loop = activeSavedLoop,
-           elapsed >= TimeInterval(loop.endMilliseconds) / 1_000 {
+        let loopRange: (start: TimeInterval, end: TimeInterval)?
+        if let loop = activeSavedLoop {
+            loopRange = (TimeInterval(loop.startMilliseconds) / 1_000, TimeInterval(loop.endMilliseconds) / 1_000)
+        } else if let loop = activeManualLoop {
+            loopRange = (loop.start, loop.end)
+        } else {
+            loopRange = nil
+        }
+        if let loopRange, elapsed >= loopRange.end {
             do {
-                try audio.jump(to: TimeInterval(loop.startMilliseconds) / 1_000, shouldPlay: true)
-                elapsed = TimeInterval(loop.startMilliseconds) / 1_000
+                try audio.jump(to: loopRange.start, shouldPlay: true)
+                elapsed = loopRange.start
             } catch {
                 activeSavedLoop = nil
                 artist = error.localizedDescription

@@ -17,6 +17,7 @@ link to, or modify Serato DJ Pro code, assets, settings, or file formats.
 - CoreMIDI input selection and live incoming-message monitor, ready for MIDI learn
 - Imported Serato cue points rendered as functional deck pads for seek/playback navigation
 - Imported saved loops rendered as deck pads with start/end repeat and release behavior
+- BPM-derived 1/2/4/8 beat manual loops with real playback repeat
 - AVAudioEngine-backed play/pause, cue, pitch, and gain controls
 - Loop, filter, sync, crossfader, waveform, and library state ready for their audio/data implementations
 
