@@ -59,6 +59,17 @@ final class DeckAudioEngine {
         schedule(from: 0)
     }
 
+    func jump(to seconds: TimeInterval, shouldPlay: Bool) throws {
+        guard let file else { return }
+        player.stop()
+        let frame = AVAudioFramePosition((seconds * file.processingFormat.sampleRate).rounded())
+        schedule(from: frame)
+        if shouldPlay {
+            try startEngineIfNeeded()
+            player.play()
+        }
+    }
+
     func setGain(_ gain: Double) {
         player.volume = Float(gain)
     }
@@ -134,6 +145,7 @@ final class Deck {
     var isCueing = false
     var loopLength: Int? = nil
     var waveform: [Float] = []
+    var cuePoints: [CuePoint] = []
     private let audio = DeckAudioEngine()
     private var mixerGain: Double = 1
 
@@ -149,6 +161,7 @@ final class Deck {
         duration = try audio.load(url: url)
         waveform = try WaveformAnalyzer.analyze(url: url)
         if let estimatedBPM = try TempoAnalyzer.estimateBPM(url: url) { bpm = estimatedBPM }
+        cuePoints = []
         trackName = url.deletingPathExtension().lastPathComponent
         artist = "Local audio file"
         elapsed = 0
@@ -159,6 +172,16 @@ final class Deck {
         try load(url: track.url)
         waveform = track.waveform
         if let estimatedBPM = track.estimatedBPM { bpm = estimatedBPM }
+        cuePoints = track.cuePoints
+    }
+
+    func triggerCue(_ cue: CuePoint) {
+        do {
+            try audio.jump(to: cue.position, shouldPlay: isPlaying)
+            elapsed = cue.position
+        } catch {
+            artist = error.localizedDescription
+        }
     }
 
     func playPause() {

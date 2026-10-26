@@ -73,6 +73,18 @@ private struct DeckView: View {
                         .tint(deck.loopLength == beats ? accent : .gray)
                 }
             }
+            if !deck.cuePoints.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(deck.cuePoints.prefix(8)) { cue in
+                        Button(cue.name.isEmpty ? "C\(cue.index + 1)" : cue.name) {
+                            deck.triggerCue(cue)
+                        }
+                        .lineLimit(1)
+                        .buttonStyle(.bordered)
+                        .tint(Color(hex: cue.colorHex) ?? accent)
+                    }
+                }
+            }
             HStack {
                 ControlSlider(title: "Pitch", value: $deck.pitch, range: -8...8, tint: accent)
                 ControlSlider(title: "Gain", value: $deck.gain, range: 0...1, tint: accent)
@@ -96,6 +108,17 @@ private struct DeckView: View {
             }
         }
         .onReceive(playbackClock) { _ in deck.refreshPlaybackTime() }
+    }
+}
+
+private extension Color {
+    init?(hex: String) {
+        guard hex.count == 7, hex.first == "#", let value = UInt32(hex.dropFirst(), radix: 16) else { return nil }
+        self.init(
+            red: Double((value >> 16) & 0xFF) / 255,
+            green: Double((value >> 8) & 0xFF) / 255,
+            blue: Double(value & 0xFF) / 255
+        )
     }
 }
 
