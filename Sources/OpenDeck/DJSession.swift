@@ -325,6 +325,19 @@ final class DJSession {
         case .deckBFilter: rightDeck.filter = normalized * 2 - 1
         case .deckAEcho: leftDeck.echo = normalized
         case .deckBEcho: rightDeck.echo = normalized
+        case .deckACue1: triggerCue(leftDeck, index: 0, message: message)
+        case .deckACue2: triggerCue(leftDeck, index: 1, message: message)
+        case .deckACue3: triggerCue(leftDeck, index: 2, message: message)
+        case .deckACue4: triggerCue(leftDeck, index: 3, message: message)
+        case .deckBCue1: triggerCue(rightDeck, index: 0, message: message)
+        case .deckBCue2: triggerCue(rightDeck, index: 1, message: message)
+        case .deckBCue3: triggerCue(rightDeck, index: 2, message: message)
+        case .deckBCue4: triggerCue(rightDeck, index: 3, message: message)
         }
+    }
+
+    private func triggerCue(_ deck: Deck, index: Int, message: MIDIMessage) {
+        guard message.data2 > 0, deck.cuePoints.indices.contains(index) else { return }
+        deck.triggerCue(deck.cuePoints[index])
     }
 }
