@@ -333,6 +333,8 @@ final class DJSession {
         case .deckBCue2: triggerCue(rightDeck, index: 1, message: message)
         case .deckBCue3: triggerCue(rightDeck, index: 2, message: message)
         case .deckBCue4: triggerCue(rightDeck, index: 3, message: message)
+        case .deckALoop4: if message.data2 > 0 { leftDeck.toggleLoop(4) }
+        case .deckBLoop4: if message.data2 > 0 { rightDeck.toggleLoop(4) }
         }
     }
 
